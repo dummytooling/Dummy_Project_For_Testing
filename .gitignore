@@ -1,0 +1,14 @@
+# Build results
+/build/
+/dist/
+/out/
+/target/
+
+# Code analysis
+/.scannerwork/
+/.sonarqube/
+
+
+# User-specific files
+*.bat
+*.properties
