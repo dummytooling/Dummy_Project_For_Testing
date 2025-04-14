@@ -27,7 +27,7 @@ jobs:
         run: |
           curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-windows.zip
           unzip sonar-scanner.zip -d $HOME
-          setx PATH "%PATH%;%HOME%\sonar-scanner-5.0.1.3006-windows\bin"
+          set PATH="%PATH%;%HOME%\sonar-scanner-5.0.1.3006-windows\bin"
           # Verify if sonar-scanner is available
           sonar-scanner --version  # This step will confirm if SonarScanner was installed correctly
           
