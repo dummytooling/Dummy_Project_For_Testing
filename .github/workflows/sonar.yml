@@ -1,4 +1,4 @@
-name: SonarCloud Scan
+name: SonarQube Scan
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   sonar:
-    runs-on: windows-latest  # or ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - name: Checkout code
@@ -22,10 +22,45 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v2
-        with:
-          projectBaseDir: .
+      # Step 3: Install SonarScanner CLI
+      - name: Install SonarScanner CLI
+        run: |
+          curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-windows.zip
+          unzip sonar-scanner.zip -d $HOME
+          echo "$HOME/sonar-scanner-5.0.1.3006-windows/bin" >> $GITHUB_PATH
+      - name: Set scan context
+        id: context
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "isPR=true" >> $GITHUB_ENV
+            echo "prKey=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+            echo "branchName=${{ github.head_ref }}" >> $GITHUB_ENV
+            echo "baseBranch=${{ github.base_ref }}" >> $GITHUB_ENV
+          else
+            echo "isPR=false" >> $GITHUB_ENV
+            echo "branchName=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          fi
+        shell: bash
+
+      - name: Run SonarScanner
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          if [ "$isPR" = "true" ]; then
+            sonar-scanner \
+              -Dsonar.projectKey=Dummy_Project_For_Testing \
+              -Dsonar.projectName=Dummy_Project_For_Testing \
+              -Dsonar.host.url=$SONAR_HOST_URL \
+              -Dsonar.login=$SONAR_TOKEN \
+              -Dsonar.pullrequest.key=$prKey \
+              -Dsonar.pullrequest.branch=$branchName \
+              -Dsonar.pullrequest.base=$baseBranch
+          else
+            sonar-scanner \
+              -Dsonar.projectKey=Dummy_Project_For_Testing \
+              -Dsonar.projectName=Dummy_Project_For_Testing \
+              -Dsonar.host.url=$SONAR_HOST_URL \
+              -Dsonar.login=$SONAR_TOKEN \
+              -Dsonar.branch.name=$branchName
+        shell: bash
