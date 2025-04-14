@@ -1,1 +1,60 @@
-.
+name: SonarQube Scan
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  sonar:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set scan context
+        id: context
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "isPR=true" >> $GITHUB_ENV
+            echo "prKey=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+            echo "branchName=${{ github.head_ref }}" >> $GITHUB_ENV
+            echo "baseBranch=${{ github.base_ref }}" >> $GITHUB_ENV
+          else
+            echo "isPR=false" >> $GITHUB_ENV
+            echo "branchName=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          fi
+        shell: bash
+
+      - name: Run SonarScanner
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          if [ "$isPR" = "true" ]; then
+            sonar-scanner \
+              -Dsonar.projectKey=Dummy_Project_For_Testing \
+              -Dsonar.projectName=Dummy_Project_For_Testing \
+              -Dsonar.host.url=$SONAR_HOST_URL \
+              -Dsonar.login=$SONAR_TOKEN \
+              -Dsonar.pullrequest.key=$prKey \
+              -Dsonar.pullrequest.branch=$branchName \
+              -Dsonar.pullrequest.base=$baseBranch
+          else
+            sonar-scanner \
+              -Dsonar.projectKey=Dummy_Project_For_Testing \
+              -Dsonar.projectName=Dummy_Project_For_Testing \
+              -Dsonar.host.url=$SONAR_HOST_URL \
+              -Dsonar.login=$SONAR_TOKEN \
+              -Dsonar.branch.name=$branchName
+        shell: bash
