@@ -30,7 +30,8 @@ jobs:
           setx PATH "%PATH%;%HOME%\sonar-scanner-5.0.1.3006-windows\bin"
           # Verify if sonar-scanner is available
           sonar-scanner --version  # This step will confirm if SonarScanner was installed correctly
-                - name: Set scan context
+          
+      - name: Set scan context
         id: context
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
