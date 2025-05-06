@@ -1,0 +1,73 @@
+name: SonarQube Scan
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  sonar:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Step 3: Install SonarScanner CLI
+      - name: Install SonarScanner CLI
+        shell: bash
+        run: |
+          curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-windows.zip
+          unzip sonar-scanner.zip -d $HOME
+          scanner_path="$HOME/sonar-scanner-5.0.1.3006-windows/bin"
+          echo "$scanner_path" >> $GITHUB_PATH
+          # Verify if sonar-scanner is available
+          $scanner_path/sonar-scanner.bat --version
+          
+      - name: Set scan context
+        id: context
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "isPR=true" >> $GITHUB_ENV
+            echo "prKey=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+            echo "branchName=${{ github.head_ref }}" >> $GITHUB_ENV
+            echo "baseBranch=${{ github.base_ref }}" >> $GITHUB_ENV
+          else
+            echo "isPR=false" >> $GITHUB_ENV
+            echo "branchName=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+          fi
+
+      - name: Run SonarScanner
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        shell: bash
+        run: |
+          if [ "$isPR" = "true" ]; then
+            sonar-scanner.bat \
+              -Dsonar.projectKey=Dummy_Project_For_Testing \
+              -Dsonar.projectName=Dummy_Project_For_Testing \
+              -Dsonar.host.url=$SONAR_HOST_URL \
+              -Dsonar.login=$SONAR_TOKEN \
+              -Dsonar.pullrequest.key=$prKey \
+              -Dsonar.pullrequest.branch=$branchName \
+              -Dsonar.pullrequest.base=$baseBranch
+          else
+            sonar-scanner.bat \
+              -Dsonar.projectKey=Dummy_Project_For_Testing \
+              -Dsonar.projectName=Dummy_Project_For_Testing \
+              -Dsonar.host.url=$SONAR_HOST_URL \
+              -Dsonar.login=$SONAR_TOKEN \
+              -Dsonar.branch.name=$branchName
+          fi
+        shell: bash
