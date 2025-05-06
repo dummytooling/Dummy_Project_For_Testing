@@ -70,4 +70,3 @@ jobs:
               -Dsonar.login=$SONAR_TOKEN \
               -Dsonar.branch.name=$branchName
           fi
-        shell: bash
